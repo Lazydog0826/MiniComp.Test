@@ -1,8 +1,10 @@
 using MiniComp.ApiLog;
 using MiniComp.Autofac;
 using MiniComp.Cache;
+using MiniComp.Core;
 using MiniComp.Core.App;
 using MiniComp.Core.App.CoreException;
+using MiniComp.Core.App.JsonConverter;
 using MiniComp.Core.Extension;
 using MiniComp.SnowFlake;
 using MiniComp.SqlSugar.DynamicExpression;
@@ -10,16 +12,31 @@ using SqlSugar;
 using Setup = MiniComp.ApiLog.Setup;
 
 var builder = WebApplication.CreateBuilder(args);
+HostApp.AppAssemblyList = ObjectExtension.GetProjectAllAssembly();
+HostApp.AppDomainTypes = ObjectExtension.GetProjectAllType();
 HostApp.Configuration = builder.Configuration;
-HostApp.AppRootPath = AppDomain.CurrentDomain.BaseDirectory;
 HostApp.HostEnvironment = builder.Environment;
+HostApp.AppRootPath = AppDomain.CurrentDomain.BaseDirectory;
+
+builder.Configuration.AddJsonFileByEnvironment("/");
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddLogging();
-builder.Services.AddControllers(opt =>
-{
-    opt.Filters.Add<RecordRequestFilter>();
-});
-
+builder.Services.AddHealthChecks();
+builder
+    .Services.AddControllers(opt =>
+    {
+        opt.Filters.Add<RecordRequestFilter>();
+        opt.Filters.Add<CoreActionFilter>();
+    })
+    .AddControllersAsServices()
+    .ConfigureApiBehaviorOptions(opt =>
+    {
+        opt.SuppressModelStateInvalidFilter = true;
+    })
+    .AddNewtonsoftJson(opt =>
+    {
+        NewtonsoftJsonConfiguration.Configure.Invoke(opt.SerializerSettings);
+    });
 builder
     .Services.AddApiLog()
     .Configure<RecordLogEvent>(opt =>
@@ -27,7 +44,6 @@ builder
         opt.Event += Setup.AnsiConsoleLogger;
         opt.Event += Setup.WriteLogFile;
     });
-
 builder.Services.AddCacheService();
 builder.Host.UseAutofac();
 builder.Services.AddControllers();
@@ -44,9 +60,12 @@ builder.Services.AddScoped<ISqlSugarClient>(_ => new SqlSugarClient(
 builder.Services.AutoAddDependency(ObjectExtension.GetProjectAllType());
 SnowFlakeConfiguration.SetOption(6, 6, new DateTime(2025, 1, 1, 0, 0, 0), 60000, 70000);
 builder.Services.AddHostedService<SnowFlakeHostService>();
+builder.Services.AddCors("*", "*", "*");
 
 var app = builder.Build();
 HostApp.RootServiceProvider = app.Services;
+app.UseRouting();
+app.UseCors();
 app.Use(
     async (context, next) =>
     {
@@ -71,5 +90,14 @@ app.Use(
         }
     }
 );
+var staticFilesPath = Path.Join(HostApp.AppRootPath, "wwwroot");
+if (Directory.Exists(staticFilesPath))
+{
+    app.UseStaticFiles();
+}
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapHealthChecks("/Health");
+app.MapHealthChecks("/");
 app.MapControllers();
 app.Run();

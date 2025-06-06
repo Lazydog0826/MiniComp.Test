@@ -5,22 +5,20 @@ using Yitter.IdGenerator;
 
 namespace MiniComp.Test.Controllers;
 
-[ApiController]
 public class TestController : ControllerBase
 {
     [HttpPost("Test")]
-    public IActionResult Test([FromBody] DynamicExpressionSearchRequest request)
+    public void Test([FromBody] DynamicExpressionSearchRequest request)
     {
         // var sql = _db.Queryable<TestModel>()
         //     .Where(request.Search)
         //     .OrderBy(request.Sort)
         //     .ToSqlString();
         // return Ok(sql);
-        throw new NotImplementedException();
     }
 
     [HttpPost("Test2")]
-    public IActionResult Test2([FromBody] DynamicExpressionSearchRequest request)
+    public void Test2([FromBody] DynamicExpressionSearchRequest request)
     {
         // var sql = _db.Queryable<TestModel>()
         //     .LeftJoin<TestModel2>((t1, t2) => t1.TestModel2Id == t2.Id)
@@ -28,11 +26,10 @@ public class TestController : ControllerBase
         //     .OrderBy(request.Sort)
         //     .ToSqlString();
         // return Ok(sql);
-        throw new NotImplementedException();
     }
 
     [HttpGet("Test3")]
-    public async Task<IActionResult> Test3()
+    public async Task<object> Test3()
     {
         // await _cacheService.AddCacheAsync(
         //     "test",
@@ -73,19 +70,19 @@ public class TestController : ControllerBase
     }
 
     [HttpGet("Test4")]
-    public IActionResult Test4()
+    public long Test4()
     {
-        return Ok(YitIdHelper.NextId());
+        return YitIdHelper.NextId();
     }
 
     [HttpGet("Test5")]
-    public IActionResult Test5()
+    public void Test5()
     {
         throw new Exception("测试");
     }
 
     [HttpGet("Test6")]
-    public async Task<IActionResult> Test6()
+    public async Task<object> Test6()
     {
         var res = await HttpRequest.HttpRequest.RequestAsync<object>(
             new HttpRequestModel
@@ -93,11 +90,7 @@ public class TestController : ControllerBase
                 UriBuilder = new UriBuilder("https://x.x.x/login"),
                 HttpMethod = HttpMethod.Post,
                 HttpContent = JsonContent.Create(
-                    new
-                    {
-                        account = "superadmin",
-                        password = "123456"
-                    }
+                    new { account = "superadmin", password = "123456" }
                 ),
             }
         );
