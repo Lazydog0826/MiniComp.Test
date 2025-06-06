@@ -90,15 +90,13 @@ public class TestController : ControllerBase
         var res = await HttpRequest.HttpRequest.RequestAsync<object>(
             new HttpRequestModel
             {
-                UriBuilder = new UriBuilder("https://sz.tdzh.cc/api/auth/login"),
+                UriBuilder = new UriBuilder("https://x.x.x/login"),
                 HttpMethod = HttpMethod.Post,
                 HttpContent = JsonContent.Create(
                     new
                     {
                         account = "superadmin",
-                        password = "123456",
-                        code = "",
-                        codeId = 0,
+                        password = "123456"
                     }
                 ),
             }
